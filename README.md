@@ -1,6 +1,6 @@
 # shanghai
 
-A [mahjong solitaire](https://en.wikipedia.org/wiki/Mahjong_solitaire) game for [Uxn](https://100r.co/site/uxn.html).
+A [mahjong solitaire](https://en.wikipedia.org/wiki/Mahjong_solitaire) (aka Shanghai solitaire) game for [Uxn](https://100r.co/site/uxn.html).
 
 Uxn is an ultra-portable personal computing stack. You write little apps in an assembly language, and run them on [any platform](https://github.com/hundredrabbits/awesome-uxn#emulators) — web, iOS, Amiga, Nintendo DS, you name it.
 
