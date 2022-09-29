@@ -10,9 +10,10 @@ rows = [
     ("bonus", 8),
 ]
 
+lines = []
 for y, (row_name, tile_count) in enumerate(rows):
     for x in range(tile_count):
-        print(f"@s-{row_name}-{x+1}")
+        lines.append(f"@s-{row_name}-{x+1}")
         for ty in range(3):
             for tx in range(2):
                 bs = []
@@ -25,4 +26,7 @@ for y, (row_name, tile_count) in enumerate(rows):
                             if img.getpixel((xx, yy)) & bit:
                                 byte |= 1 << 7-bx
                         bs.append(byte)
-                print("    " + " ".join("%02x" % b for b in bs))
+                lines.append("    " + " ".join("%02x" % b for b in bs))
+
+with open("tiles.tal", "w") as f:
+    f.write("\n".join(lines) + "\n")
