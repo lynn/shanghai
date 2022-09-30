@@ -95,12 +95,12 @@ BRK
 	.Mouse/y DEI2 DUP2 .pointer/y STZ2 Ssy
 	#42 Spr
 
-    .highlighted LDZ2 #81 ;draw-tile JSR2
+    .highlighted LDZ2 #81 ;draw-tile-cover JSR2
 
     .Mouse/x DEI2 .Mouse/y DEI2
     ;mouse-to-tile JSR2
     DUP2 .highlighted STZ2
-    #83 ;draw-tile JSR2
+    #83 ;draw-tile-cover JSR2
 BRK
 
 @new-game
@@ -221,6 +221,7 @@ JMP2r
     ROT ROT ( col xyz* )
     STH2
     STH2rk ;board ADD2 LDA ( col tile -- )
+    DUP ,&nonzero JCN  POP2r POP2 JMP2r  &nonzero
     Ext #0060 MUL2 ;s-blank ADD2 Ssa ( col -- )
     STH2rk #001f AND2 #0008 MUL2 #0010 ADD2 Ssx ( col -- )
     STH2rk #05 SFT2 #000f AND2 #000b MUL2 #0010 ADD2
@@ -228,6 +229,26 @@ JMP2r
     ( col -- )
     Aut1ay Sprrr ( -- )
     POP2r
+JMP2r
+
+@draw-tile-cover ( xyz* col -- )
+    ROTk ROT ROT ;draw-tile JSR2
+    POP ( xyz* )
+    DUP2
+    ( Redraw the whole column in front of xyz: )
+    &next-y
+    #0020 ADD2 ( y+=1 )
+    #01ff AND2 ( z=0 )
+    &next-z
+    DUP2 #81 ;draw-tile JSR2
+    #0200 ADD2 ( z++ )
+    DUP2 #0a00 LTH2 ,&next-z JCN
+    DUP2 #0be0 LTH2 ,&next-y JCN
+    POP2
+
+    #08ed EQU2 ,&is-top JCN
+    #08ed #81 ;draw-tile JSR2
+    &is-top
 JMP2r
 
 @mouse-to-tile ( mx* my* -- xyz* )
