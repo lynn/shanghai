@@ -80,10 +80,17 @@
     #0110 .Screen/width DEO2
     #00e0 .Screen/height DEO2
 
+    #1111 .Audio2/adsr DEO2
+    #0100 .Audio2/length DEO2
+    ;wave-sus2 .Audio2/addr DEO2
+    #00 .Audio2/volume DEO
+    #01 .Audio2/pitch DEO
+
     ;on-mouse .Mouse/vector DEO2
     ;prng-init JSR2
     ;new-game JSR2
     ;make-turtle JSR2
+
 BRK
 
 @s1x1_mouse
@@ -144,8 +151,8 @@ BRK
 @try-match
     .picked LDZ2 .picked/old LDZ2 NEQ2 ,&ok JCN JMP2r &ok
 
-    .picked LDZ2 ;board ADD2 LDA
-    .picked/old LDZ2 ;board ADD2 LDA
+    .picked LDZ2 ;board ADD2 LDA        DUP #23 LTH ,&h1 JCN INC #03 ORA &h1
+    .picked/old LDZ2 ;board ADD2 LDA    DUP #23 LTH ,&h2 JCN INC #03 ORA &h2
     EQU ,&match JCN JMP2r &match
 
     #00 .picked LDZ2 ;board ADD2 STA
@@ -157,6 +164,26 @@ BRK
     #0000 .hovered/old STZ2
     #0000 .picked STZ2
     #0000 .picked/old STZ2
+
+    #ff1f .Audio2/adsr DEO2
+    #0100 .Audio2/length DEO2
+    ;wave-sus2 .Audio2/addr DEO2
+    #11 .Audio2/volume DEO
+    ;prng JSR2 #0005 Mod2 NIP #07 MUL #03 DIV #10 ADD .Audio2/pitch DEO
+
+    ( Play a sound: )
+    #0105 .Audio0/adsr DEO2
+    #0100 .Audio0/length DEO2
+    ;wave-note .Audio0/addr DEO2
+    #a6 .Audio0/volume DEO
+    ;prng JSR2 #0005 Mod2 NIP #07 MUL #03 DIV #40 ADD .Audio0/pitch DEO
+
+    #2105 .Audio1/adsr DEO2
+    #0100 .Audio1/length DEO2
+    ;wave-note .Audio1/addr DEO2
+    #6a .Audio1/volume DEO
+    ;prng JSR2 #0005 Mod2 NIP #07 MUL #03 DIV #4c ADD .Audio1/pitch DEO
+
     ;redraw-board JSR2
 JMP2r
 
@@ -404,3 +431,4 @@ JMP2r
 
 ~tiles.tal
 ~sus2.tal
+~note.tal

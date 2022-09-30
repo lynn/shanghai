@@ -11,9 +11,19 @@ rows = [
 ]
 
 lines = []
+lines.append("@s-blank")
+lines.append("    00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00")
+lines.append("    00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00")
+lines.append("    00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00")
+lines.append("    00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00")
+lines.append("    00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00")
+lines.append("    00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00")
+
 for y, (row_name, tile_count) in enumerate(rows):
     for x in range(tile_count):
-        lines.append(f"@s-{row_name}-{x+1}")
+        lines.append(f"( @s-{row_name}-{x+1} )")
+        img.putpixel((16*x, 24*y+1), 0)
+        img.putpixel((16*x+15, 24*y+1), 0)
         for ty in range(3):
             for tx in range(2):
                 bs = []

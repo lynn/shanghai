@@ -9,13 +9,15 @@ chords = [
     #("maj", [16, 20, 24]),
     ("sus2", [8, 9, 12]),
     #("dom", [14, 16, 20]),
+    ("note", [1]),
 ]
 
 for name, notes in chords:
     L = 256
     buf = []
     for i in range(L):
-        s = sum(wave(k*i/L) for k in notes) / len(notes)
+        f = sin if name == "note" else wave
+        s = sum(f(k*i/L) for k in notes) / len(notes)
         buf.append(int(s * 126 + 128))
     buf = bytes(buf)
     #with open(f"{name}.pcm", "wb") as f:
