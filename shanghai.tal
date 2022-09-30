@@ -81,7 +81,7 @@
     ;on-mouse .Mouse/vector DEO2
     ;prng-init JSR2
     ;new-game JSR2
-    ;draw-turtle JSR2
+    ;make-turtle JSR2
 BRK
 
 @s1x1_mouse
@@ -143,73 +143,31 @@ JMP2r
     POP2 POP2r
 JMP2r
 
-@draw-turtle
+@make-turtle
     ;turtle
-&draw-row
-    ( ptr* )
-    INC2k LDA2 ( ptr* y z )
-    Ext #fffc MUL2 ROT Ext #000b MUL2 ADD2 #0010 ADD2 ( ptr* -4z+11y+16 )
-    Ssy ( ptr* )
-    DUP2 #0003 ADD2 LDA ( ptr* num )
-    DUP #00 EQU ;&done JCN2 ( ptr* num )
-    Ext ( ptr* num^ )
-&draw-row-tile
-    #0001 SUB2 ( ptr* num^ )
-    OVR2 LDA Ext ( ptr* num^ x^ )
-    OVR2 DUP2 ADD2 ADD2 ( ptr* num^ xi^ )
-    STH2 OVR2 INC2 LDA2 STH2r ( ptr* num^ y z xi^ )
-    SWP2 ( ptr* num^ xi^ y z )
-    OVR2 ROT Ext ( ptr* num^ xi^ y xi^ z^ )
-    #90 SFT2 ORA2 ( ptr* num^ xi^ y xi^,z^ )
-    ROT Ext #50 SFT2 ORA2  ( ptr* num^ xi^ idx* )
-    .i LDZ2 ;deal ADD2 LDA ROT ROT  ( ptr* num^ xi^ tile idx* )
-    ;board ADD2 STA ( ptr* num^ xi^ )
-    #0008 MUL2 #0010 ADD2 ( ptr* num^ sprx^ )
-    ( ROT2k NIP2 NIP2 #0002 ADD2 LDA Ext SUB2 )
-    Ssx ( ptr* num^ )
-    .i LDZ2 ;deal ADD2 LDA Ext #0060 MUL2 ;s-blank ADD2 Ssa Aut1ay
-    .i LDZ2 INC2 .i STZ2
-    #81 Sprrr
-    .Screen/y DEI2 #0018 SUB2 Ssy
-    DUP2 #0000 NEQ2 ;&draw-row-tile JCN2
-    POP2 ( ptr* )
-    #0004 ADD2
-    ;&draw-row JMP2
-&done
-    ( ptr* num )
-    POP POP2
-JMP2r
-
+    #0000 STH2
+&next-turtle-entry
+    LDA2k ( turtle nxyz / i )
+&next-tile
+    DUP2 ORA ,&yes JCN  POP2 POP2 POP2r JMP2r  &yes
+    DUP2 #0fff AND2 ( turtle nxyz xyz )
+    STH2rk ;deal ADD2 LDA ( turtle nxyz xyz t )
+    Ovrsb ;board ADD2 STA ( turtle nxyz xyz )
+    #81 ;draw-tile JSR2 ( turtle nxyz )
+    #0ffe SUB2 ( turtle n-1,x+2,y,z )
+    INC2r ( i++ )
+    DUP2 #0fff GTH2 ,&next-tile JCN
+    POP2
+    INC2 INC2
+    ,&next-turtle-entry JMP
 @turtle
-    ( x y z row-length )
-    02 00 00 0c
-    06 02 00 08
-    04 04 00 0a
-    02 06 00 0c
-    00 07 00 01
-    1a 07 00 02
-    02 08 00 0c
-    04 0a 00 0a
-    06 0c 00 08
-    02 0e 00 0c
-
-    08 02 01 06
-    08 04 01 06
-    08 06 01 06
-    08 08 01 06
-    08 0a 01 06
-    08 0c 01 06
-
-    0a 04 02 04
-    0a 06 02 04
-    0a 08 02 04
-    0a 0a 02 04
-
-    0c 06 03 02
-    0c 08 03 02
-
-    0d 07 04 01
-    00 00 00 00 ( end )
+    ( Array of xyz|n<<12 )
+    c002 8046 a084 c0c2 10e0 20fa c102 a144 8186 c1c2
+    6248 6288 62c8 6308 6348 6388
+    448a 44ca 450a 454a
+    26cc 270c
+    18ed
+    0000 ( end )
 
 @deal ( Filled and shuffled to generate the board )
     $90
