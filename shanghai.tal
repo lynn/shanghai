@@ -29,6 +29,8 @@
 %Ovrsb { ROTk NIP SWP } ( ss b -- ss b ss )
 %Swpsb { ROT ROT } ( ss b -- b ss )
 
+%Bd { ;board ADD2 LDA }
+
 (
     !!! All numbers here are in hex. !!!
 
@@ -62,10 +64,10 @@
 |0000
 @i $2
 @j $2
-@p $2
 @mx $2
 @my $2
-@highlighted $2
+@hovered $2 &old $2
+@picked $2 &old $2
 
 @pointer &x $2 &y $2
 
@@ -95,17 +97,85 @@ BRK
     .Mouse/y DEI2 DUP2 .pointer/y STZ2 Ssy
     #42 Spr
 
-    .highlighted LDZ2 #81 ;draw-tile-cover JSR2
+    .hovered LDZ2 .hovered/old STZ2
+    .picked LDZ2 .picked/old STZ2
 
     .Mouse/x DEI2 .Mouse/y DEI2
     ;mouse-to-tile JSR2
-    DUP2 ;is-free JSR2 #00 EQU ,&not-free JCN
-    DUP2 .highlighted STZ2
-    #83 ;draw-tile-cover JSR2
-BRK
-    &not-free
+    DUP2 ;is-free JSR2 ,&free JCN
     POP2
+    #0000 .hovered STZ2
+    ,&highlight JMP
+&free
+    .hovered STZ2
+&highlight
+    .Mouse/state DEI #00 EQU ,&not-pressed JCN
+    .hovered LDZ2 .picked STZ2
+    ;try-match JSR2
+
+    &not-pressed
+
+    .hovered LDZ2 .hovered/old LDZ2 EQU2
+    .hovered LDZ2 .picked/old LDZ2 EQU2 ORA
+    ,&no-on-hovered JCN
+    .hovered LDZ2 #83 ;draw-tile-cover JSR2
+    &no-on-hovered
+
+    .picked LDZ2 .hovered/old LDZ2 EQU2
+    .picked LDZ2 .picked/old LDZ2 EQU2 ORA
+    ,&no-on-picked JCN
+    .picked LDZ2 #83 ;draw-tile-cover JSR2
+    &no-on-picked
+
+    .hovered/old LDZ2 .hovered LDZ2 EQU2
+    .hovered/old LDZ2 .picked LDZ2 EQU2 ORA
+    ,&no-off-hovered JCN
+    .hovered/old LDZ2 #81 ;draw-tile-cover JSR2
+    &no-off-hovered
+
+    .picked/old LDZ2 .hovered LDZ2 EQU2
+    .picked/old LDZ2 .picked LDZ2 EQU2 ORA
+    ,&no-off-picked JCN
+    .picked/old LDZ2 #81 ;draw-tile-cover JSR2
+    &no-off-picked
+
 BRK
+
+@try-match
+    .picked LDZ2 .picked/old LDZ2 NEQ2 ,&ok JCN JMP2r &ok
+
+    .picked LDZ2 ;board ADD2 LDA
+    .picked/old LDZ2 ;board ADD2 LDA
+    EQU ,&match JCN JMP2r &match
+
+    #00 .picked LDZ2 ;board ADD2 STA
+    #00 .picked/old LDZ2 ;board ADD2 STA
+    .picked LDZ2 ;natural-draw-tile JSR2
+    .picked/old LDZ2 ;natural-draw-tile JSR2
+
+    #0000 .hovered STZ2
+    #0000 .hovered/old STZ2
+    #0000 .picked STZ2
+    #0000 .picked/old STZ2
+    ;redraw-board JSR2
+JMP2r
+
+@redraw-board
+    ;turtle
+    #0000 STH2
+&next-turtle-entry
+    LDA2k ( turtle nxyz / i )
+&next-tile
+    DUP2 ORA ,&yes JCN  POP2 POP2 POP2r JMP2r  &yes
+    DUP2 #0fff AND2 ( turtle nxyz xyz )
+    DUP2 Bd #00 EQU ,&nah JCN
+    #81 ;draw-tile JSR2 ( turtle nxyz ) ,&whatevs JMP &nah POP2 &whatevs
+    #0ffe SUB2 ( turtle n-1,x+2,y,z )
+    INC2r ( i++ )
+    DUP2 #0fff GTH2 ,&next-tile JCN
+    POP2
+    INC2 INC2
+    ,&next-turtle-entry JMP
 
 @new-game
     ( Play a new-game-y sound: )
@@ -179,11 +249,15 @@ JMP2r
 @board ( board[z<<9 | y<<5 | x] = tile )
     $0a00
 
+@natural-draw-tile ( xyz* -- )
+    DUP2 .hovered LDZ2 EQU2
+    Ovrsb .picked LDZ2 EQU2 ORA
+    DUP ADD INC #80 ORA
 @draw-tile ( xyz* col -- )
     ROT ROT ( col xyz* )
     STH2
     STH2rk ;board ADD2 LDA ( col tile -- )
-    DUP ,&nonzero JCN  POP2r POP2 JMP2r  &nonzero
+    ( DUP ,&nonzero JCN  POP2r POP2 JMP2r  &nonzero )
     Ext #0060 MUL2 ;s-blank ADD2 Ssa ( col -- )
     STH2rk #001f AND2 #0008 MUL2 #0010 ADD2 Ssx ( col -- )
     STH2rk #05 SFT2 #000f AND2 #000b MUL2 #0010 ADD2
@@ -194,6 +268,9 @@ JMP2r
 JMP2r
 
 @draw-tile-cover ( xyz* col -- )
+    ( Early exit if zero )
+    STH ORAk ,&non-zero JCN  POPr POP2 JMP2r  &non-zero STHr
+
     ROTk ROT ROT ;draw-tile JSR2
     POP ( xyz* )
     DUP2
@@ -202,19 +279,20 @@ JMP2r
     #0020 ADD2 ( y+=1 )
     #01ff AND2 ( z=0 )
     &next-z
-    DUP2 #81 ;draw-tile JSR2
+    DUP2 ;board ADD2 LDA #00 EQU ,&nah JCN
+    DUP2 ;natural-draw-tile JSR2 &nah
     #0200 ADD2 ( z++ )
     DUP2 #0a00 LTH2 ,&next-z JCN
     DUP2 #0be0 LTH2 ,&next-y JCN
     POP2
 
     #08ed EQU2 ,&is-top JCN
-    #08ed #81 ;draw-tile JSR2
+    #08ed Bd #00 EQU ,&is-top JCN
+    #08ed ;natural-draw-tile JSR2
     &is-top
 JMP2r
 
 @is-free ( xyz* -- bool )
-    %Bd { ;board ADD2 LDA }
     DUP2 ORA ,&non-zero JCN POP2 #00 JMP2r &non-zero
     STH2
 
