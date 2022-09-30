@@ -26,6 +26,8 @@
 %Aut1ay { #16 .Screen/auto DEO }
 %Aut2ay { #26 .Screen/auto DEO }
 %Aut1y { #12 .Screen/auto DEO }
+%Ovrsb { ROTk NIP SWP } ( ss b -- ss b ss )
+%Swpsb { ROT ROT } ( ss b -- b ss )
 
 (
     !!! All numbers here are in hex. !!!
@@ -48,7 +50,10 @@
 
     Sprite address: @s-blank + 60*x.
 
-    Tile x,y,z is rendered at (8*x+10, fffc*z+b*y+10)
+    Tile x,y,z is rendered at [8*x+10, b*y-4*z+10]
+
+    So mouse mx,my is tile  [ [mx-10]>>3, [[my-10+4*z]/b], z ]  for z=4..0
+    ...also checking one tile left and one or two tiles up
 )
 
 
@@ -58,6 +63,11 @@
 @i $2
 @j $2
 @p $2
+@mx $2
+@my $2
+@highlighted $2
+
+@pointer &x $2 &y $2
 
 ( program )
 
@@ -68,9 +78,29 @@
     #0110 .Screen/width DEO2
     #00e0 .Screen/height DEO2
 
+    ;on-mouse .Mouse/vector DEO2
     ;prng-init JSR2
     ;new-game JSR2
     ;draw-turtle JSR2
+BRK
+
+@s1x1_mouse
+	80c0 e0f0 c020 0000
+@on-mouse
+	;s1x1_mouse Ssa Aut0
+	.pointer/x LDZ2 Ssx
+	.pointer/y LDZ2 Ssy
+	#40 Spr
+	.Mouse/x DEI2 DUP2 .pointer/x STZ2 Ssx
+	.Mouse/y DEI2 DUP2 .pointer/y STZ2 Ssy
+	#42 Spr
+
+    .highlighted LDZ2 #81 ;draw-tile JSR2
+
+    .Mouse/x DEI2 .Mouse/y DEI2
+    ;mouse-to-tile JSR2
+    DUP2 .highlighted STZ2
+    #83 ;draw-tile JSR2
 BRK
 
 @new-game
@@ -121,19 +151,27 @@ JMP2r
     Ext #fffc MUL2 ROT Ext #000b MUL2 ADD2 #0010 ADD2 ( ptr* -4z+11y+16 )
     Ssy ( ptr* )
     DUP2 #0003 ADD2 LDA ( ptr* num )
-    DUP #00 EQU ,&done JCN ( ptr* num )
+    DUP #00 EQU ;&done JCN2 ( ptr* num )
     Ext ( ptr* num^ )
-&draw-tile
+&draw-row-tile
     #0001 SUB2 ( ptr* num^ )
     OVR2 LDA Ext ( ptr* num^ x^ )
-    OVR2 DUP2 ADD2 ADD2 #0008 MUL2 #0010 ADD2 ( ptr* num^ sprx^ )
+    OVR2 DUP2 ADD2 ADD2 ( ptr* num^ xi^ )
+    STH2 OVR2 INC2 LDA2 STH2r ( ptr* num^ y z xi^ )
+    SWP2 ( ptr* num^ xi^ y z )
+    OVR2 ROT Ext ( ptr* num^ xi^ y xi^ z^ )
+    #90 SFT2 ORA2 ( ptr* num^ xi^ y xi^,z^ )
+    ROT Ext #50 SFT2 ORA2  ( ptr* num^ xi^ idx* )
+    .i LDZ2 ;deal ADD2 LDA ROT ROT  ( ptr* num^ xi^ tile idx* )
+    ;board ADD2 STA ( ptr* num^ xi^ )
+    #0008 MUL2 #0010 ADD2 ( ptr* num^ sprx^ )
     ( ROT2k NIP2 NIP2 #0002 ADD2 LDA Ext SUB2 )
     Ssx ( ptr* num^ )
     .i LDZ2 ;deal ADD2 LDA Ext #0060 MUL2 ;s-blank ADD2 Ssa Aut1ay
     .i LDZ2 INC2 .i STZ2
     #81 Sprrr
     .Screen/y DEI2 #0018 SUB2 Ssy
-    DUP2 #0000 NEQ2 ,&draw-tile JCN
+    DUP2 #0000 NEQ2 ;&draw-row-tile JCN2
     POP2 ( ptr* )
     #0004 ADD2
     ;&draw-row JMP2
@@ -178,6 +216,83 @@ JMP2r
 
 @board ( board[z<<9 | y<<5 | x] = tile )
     $0a00
+
+@draw-tile ( xyz* col -- )
+    ROT ROT ( col xyz* )
+    STH2
+    STH2rk ;board ADD2 LDA ( col tile -- )
+    Ext #0060 MUL2 ;s-blank ADD2 Ssa ( col -- )
+    STH2rk #001f AND2 #0008 MUL2 #0010 ADD2 Ssx ( col -- )
+    STH2rk #05 SFT2 #000f AND2 #000b MUL2 #0010 ADD2
+    STH2rk #09 SFT2 #20 SFT2 SUB2 Ssy
+    ( col -- )
+    Aut1ay Sprrr ( -- )
+    POP2r
+JMP2r
+
+@mouse-to-tile ( mx* my* -- xyz* )
+(
+    Tile x,y,z is rendered at [8*x+10, b*y-4*z+10]
+
+    So mouse mx,my is tile  [ [mx-10]>>3, [[my-10+4*z]/b], z ]  for z=4..0
+    ...also checking one tile left and one or two tiles up
+)
+    .my STZ2 .mx STZ2
+
+    #0004
+    &next-z
+    #0000
+    &next-ty
+    #0000
+    &next-tx
+
+    ( z* ty* tx* )
+    ROT2k
+    ( z* ty* tx* ty* tx* z* )
+    STH2k ( save z* )
+    .my LDZ2 #0010 SUB2 SWP2 #0004 MUL2 ADD2
+    ( z* ty* tx* ty* tx* my-10+4z )
+    #000b DIV2 ROT2 SUB2
+    ( z* ty* tx* tx* my-10+4z/b-ty )
+    DUP2 #0010 LTH2 ,&ok-y JCN
+    POP2 POP2r ,&no-tile JMP
+    &ok-y
+
+    #50 SFT2
+    .mx LDZ2 #0010 SUB2 #03 SFT2 ROT2 SUB2
+    ( z* ty* tx* my-10+4z/b-ty<<5 mx-10>>3-tx )
+    ORA2 STH2r #90 SFT2 ( restore and use z* )
+    ORA2
+    ( z* ty* tx* i* )
+    DUP2 ;board ADD2 LDA
+    ( z* ty* tx* i* tile )
+    #00 EQU ,&no-tile JCN
+
+    ( z* ty* tx* i* )
+    DUP2 #0800 LTH2 ( z* ty* tx* i* i<800 )
+    Ovrsb #0200 ADD2 ;board ADD2 LDA #00 GTH AND ( z* ty* tz* i* blocked )
+    ,&no-tile JCN
+
+    ( return i*: )
+    NIP2 NIP2 NIP2 JMP2r
+
+    &no-tile
+    POP2
+    ( z* ty* tx* )
+
+    INC2
+    DUP2 #0002 NEQ2 ;&next-tx JCN2
+    POP2
+    INC2
+    DUP2 #0002 NEQ2 ;&next-ty JCN2
+    POP2
+    #0001 SUB2
+    DUP2 #ffff NEQ2 ;&next-z JCN2
+    POP2
+
+    ( no tile found )
+    #0000
+JMP2r
 
 @prng-init ( -- )
 
