@@ -85,15 +85,15 @@
 BRK
 
 @s1x1_mouse
-	80c0 e0f0 c020 0000
+    80c0 e0f0 c020 0000
 @on-mouse
-	;s1x1_mouse Ssa Aut0
-	.pointer/x LDZ2 Ssx
-	.pointer/y LDZ2 Ssy
-	#40 Spr
-	.Mouse/x DEI2 DUP2 .pointer/x STZ2 Ssx
-	.Mouse/y DEI2 DUP2 .pointer/y STZ2 Ssy
-	#42 Spr
+    ;s1x1_mouse Ssa Aut0
+    .pointer/x LDZ2 Ssx
+    .pointer/y LDZ2 Ssy
+    #40 Spr
+    .Mouse/x DEI2 DUP2 .pointer/x STZ2 Ssx
+    .Mouse/y DEI2 DUP2 .pointer/y STZ2 Ssy
+    #42 Spr
 
     .highlighted LDZ2 #81 ;draw-tile-cover JSR2
 
