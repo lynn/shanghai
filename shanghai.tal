@@ -99,8 +99,12 @@ BRK
 
     .Mouse/x DEI2 .Mouse/y DEI2
     ;mouse-to-tile JSR2
+    DUP2 ;is-free JSR2 #00 EQU ,&not-free JCN
     DUP2 .highlighted STZ2
     #83 ;draw-tile-cover JSR2
+BRK
+    &not-free
+    POP2
 BRK
 
 @new-game
@@ -207,6 +211,29 @@ JMP2r
     #08ed EQU2 ,&is-top JCN
     #08ed #81 ;draw-tile JSR2
     &is-top
+JMP2r
+
+@is-free ( xyz* -- bool )
+    %Bd { ;board ADD2 LDA }
+    DUP2 ORA ,&non-zero JCN POP2 #00 JMP2r &non-zero
+    STH2
+
+        STH2rk #0022 SUB2 Bd #00 GTH STH2rk #01ff AND2 #001f GTH2 AND
+        STH2rk #0002 SUB2 Bd ORA
+        STH2rk #001e ADD2 Bd ORA #00 EQU
+
+        STH2rk #001e SUB2 Bd #00 GTH STH2rk #01ff AND2 #001f GTH2 AND
+        STH2rk #0002 ADD2 Bd ORA
+        STH2rk #0022 ADD2 Bd ORA #00 EQU
+    ORA
+
+            STH2rk #07ff GTH2
+
+            STH2rk #0200 ADD2 Bd #00 EQU
+            STH2r  #0600 LTH2 #08ed Bd #00 EQU ORA
+        AND
+    ORA
+    AND
 JMP2r
 
 @mouse-to-tile ( mx* my* -- xyz* )
