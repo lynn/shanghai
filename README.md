@@ -9,9 +9,9 @@ Uxn is an ultra-portable personal computing stack. You write little apps in an a
 ## TODO
 
 - [x] Draw tiles in a turtle shape
-- [ ] Select tiles with the mouse
-- [ ] Click and match tiles
-- [ ] See number of open matches
+- [x] Select tiles with the mouse
+- [x] Click and match tiles
+- [x] See number of open matches
 - [ ] Controller support
 - [ ] Title screen, timer/restart/win UI
 - [ ] Sound effects! Animations!

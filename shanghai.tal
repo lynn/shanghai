@@ -15,6 +15,8 @@
 %Mod { DIVk MUL SUB }
 %Mod2 { DIV2k MUL2 SUB2 }
 %Dbg { #01 .System/debug DEO }
+%Gsx { .Screen/x DEI2 }
+%Gsy { .Screen/y DEI2 }
 %Ssx { .Screen/x DEO2 }
 %Ssy { .Screen/y DEO2 }
 %Ssa { .Screen/addr DEO2 }
@@ -90,8 +92,49 @@
     ;prng-init JSR2
     ;new-game JSR2
     ;make-turtle JSR2
-
+    ;example-text #0004 #0000 ;draw-text JSR2
+    ;redraw-board JSR2
 BRK
+
+@example-text
+    "matches: 20 00
+
+@draw-text ( ptr* x* y* -- )
+    Ssy Ssx Aut0ay
+    &next
+    LDAk ( ptr* ch )
+    DUP ,&ok JCN
+    POP POP2 JMP2r
+    &ok ( ptr* ch )
+    ;putchar JSR2
+    INC2
+    Gsx #0008 ADD2 Ssx
+    ,&next JMP
+
+@draw-number ( num x* y* -- )
+    Ssy Ssx Aut0ay
+    DUP #00 EQU #02 ADD ;text-color STA
+
+    DUP #64 LTH ,&no-hundreds JCN
+    DUP #64 DIV DUP #30 ADD ;putchar JSR2 #64 MUL SUB
+    Gsx #0008 ADD2 Ssx
+    &no-hundreds
+
+    DUP #0a LTH ,&no-tens JCN
+    DUP #0a DIV DUP #30 ADD ;putchar JSR2 #0a MUL SUB
+    Gsx #0008 ADD2 Ssx
+    &no-tens
+    #30 ADD ;putchar JSR2
+
+    Gsx #0008 ADD2 Ssx
+    #20 ;putchar JSR2
+JMP2r
+
+@putchar ( ch -- )
+    Ext #40 SFT2 ;font ADD2 Ssa
+    LIT @text-color 02 Sprr
+    Gsy #0010 SUB2 Ssy
+JMP2r
 
 @s1x1_mouse
     80c0 e0f0 c020 0000
@@ -187,15 +230,34 @@ BRK
     ;redraw-board JSR2
 JMP2r
 
+@match-array
+    $30
+
 @redraw-board
     ;turtle
     #0000 STH2
+
+    #0030
+&next-clear
+    #0001 SUB2
+    DUP2 ;match-array ADD2 #00 ROT ROT STA
+    ORAk ,&next-clear JCN
+    POP2
+
 &next-turtle-entry
     LDA2k ( turtle nxyz / i )
 &next-tile
-    DUP2 ORA ,&yes JCN  POP2 POP2 POP2r JMP2r  &yes
+    DUP2 ORA ,&yes JCN  POP2 POP2 POP2r ,&draw-counter JMP  &yes
     DUP2 #0fff AND2 ( turtle nxyz xyz )
     DUP2 Bd #00 EQU ,&nah JCN
+    DUP2 ;is-free JSR2 ( turtle nxyz xyz isfree )
+    #00 EQU ,&not-free JCN
+    ( turtle nxyz xyz )
+    DUP2 Bd DUP #23 LTH ,&h1 JCN INC #03 ORA &h1
+    Ext ;match-array ADD2
+    LDAk INC ROT ROT STA
+
+    &not-free
     #81 ;draw-tile JSR2 ( turtle nxyz ) ,&whatevs JMP &nah POP2 &whatevs
     #0ffe SUB2 ( turtle n-1,x+2,y,z )
     INC2r ( i++ )
@@ -203,14 +265,25 @@ JMP2r
     POP2
     INC2 INC2
     ,&next-turtle-entry JMP
+&draw-counter
+    #00
+    #0030
+&next-count
+    #0001 SUB2
+    DUP2 ;match-array ADD2 LDA #01 GTH ( total idx* ismatch )
+    STH ROT STHr ADD ( idx* total+match )
+    ROT ROT
+    ORAk ,&next-count JCN
+    POP2
+    #0048 #0000 ;draw-number JSR2
+JMP2r
 
 @new-game
     ( Play a new-game-y sound: )
-    #2202 .Audio0/adsr DEO2
-    #0100 .Audio0/length DEO2
-    ;wave-sus2 .Audio0/addr DEO2
-    #88 .Audio0/volume DEO
-    #18 .Audio0/pitch DEO
+    #2209 .Audio0/adsr DEO2 #0100 .Audio0/length DEO2 ;wave-sus2 .Audio0/addr DEO2 #55 .Audio0/volume DEO #18 .Audio0/pitch DEO
+    #020c .Audio1/adsr DEO2 #0100 .Audio1/length DEO2 ;wave-note .Audio1/addr DEO2 #84 .Audio1/volume DEO #30 .Audio1/pitch DEO
+    #420c .Audio2/adsr DEO2 #0100 .Audio2/length DEO2 ;wave-note .Audio2/addr DEO2 #66 .Audio2/volume DEO #37 .Audio2/pitch DEO
+    #820c .Audio3/adsr DEO2 #0100 .Audio3/length DEO2 ;wave-note .Audio3/addr DEO2 #48 .Audio3/volume DEO #3e .Audio3/pitch DEO
 
     ( Deal tiles into an array: )
     ;deal
@@ -254,7 +327,7 @@ JMP2r
     DUP2 #0fff AND2 ( turtle nxyz xyz )
     STH2rk ;deal ADD2 LDA ( turtle nxyz xyz t )
     Ovrsb ;board ADD2 STA ( turtle nxyz xyz )
-    #81 ;draw-tile JSR2 ( turtle nxyz )
+    ( #81 ;draw-tile JSR2 ) POP2 ( turtle nxyz )
     #0ffe SUB2 ( turtle n-1,x+2,y,z )
     INC2r ( i++ )
     DUP2 #0fff GTH2 ,&next-tile JCN
@@ -432,3 +505,4 @@ JMP2r
 ~tiles.tal
 ~sus2.tal
 ~note.tal
+~font.tal
