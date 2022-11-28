@@ -235,7 +235,7 @@ JMP2r
 
 @redraw-board
     ;turtle
-    #0000 STH2
+    LIT2r 0000
 
     #0030
 &next-clear
@@ -247,7 +247,7 @@ JMP2r
 &next-turtle-entry
     LDA2k ( turtle nxyz / i )
 &next-tile
-    DUP2 ORA ,&yes JCN  POP2 POP2 POP2r ,&draw-counter JMP  &yes
+    ORAk ,&yes JCN  POP2 POP2 POP2r ,&draw-counter JMP  &yes
     DUP2 #0fff AND2 ( turtle nxyz xyz )
     DUP2 Bd #00 EQU ,&nah JCN
     DUP2 ;is-free JSR2 ( turtle nxyz xyz isfree )
@@ -313,17 +313,17 @@ JMP2r
     STH2rk .i LDZ2 ADD2 STA ( arr[i] )
     STH2rk .j LDZ2 ADD2 STA ( )
     .i LDZ2 ( i* )
-    DUP2 ORA ,&next-swap JCN
+    ORAk ,&next-swap JCN
     POP2 POP2r
 JMP2r
 
 @make-turtle
     ;turtle
-    #0000 STH2
+    LIT2r 0000
 &next-turtle-entry
     LDA2k ( turtle nxyz / i )
 &next-tile
-    DUP2 ORA ,&yes JCN  POP2 POP2 POP2r JMP2r  &yes
+    ORAk ,&yes JCN  POP2 POP2 POP2r JMP2r  &yes
     DUP2 #0fff AND2 ( turtle nxyz xyz )
     STH2rk ;deal ADD2 LDA ( turtle nxyz xyz t )
     Ovrsb ;board ADD2 STA ( turtle nxyz xyz )
@@ -359,9 +359,9 @@ JMP2r
     STH2rk ;board ADD2 LDA ( col tile -- )
     ( DUP ,&nonzero JCN  POP2r POP2 JMP2r  &nonzero )
     Ext #0060 MUL2 ;s-blank ADD2 Ssa ( col -- )
-    STH2rk #001f AND2 #0008 MUL2 #0010 ADD2 Ssx ( col -- )
+    STH2rk #001f AND2 #30 SFT2 #0010 ADD2 Ssx ( col -- )
     STH2rk #05 SFT2 #000f AND2 #000b MUL2 #0010 ADD2
-    STH2rk #09 SFT2 #20 SFT2 SUB2 Ssy
+    STH2rk #29 SFT2 SUB2 Ssy
     ( col -- )
     Aut1ay Sprrr ( -- )
     POP2r
@@ -393,7 +393,7 @@ JMP2r
 JMP2r
 
 @is-free ( xyz* -- bool )
-    DUP2 ORA ,&non-zero JCN POP2 #00 JMP2r &non-zero
+    ORAk ,&non-zero JCN POP2 #00 JMP2r &non-zero
     STH2
 
         STH2rk #0022 SUB2 Bd #00 GTH STH2rk #01ff AND2 #001f GTH2 AND
@@ -434,7 +434,7 @@ JMP2r
     ROT2k
     ( z* ty* tx* ty* tx* z* )
     STH2k ( save z* )
-    .my LDZ2 #0010 SUB2 SWP2 #0004 MUL2 ADD2
+    .my LDZ2 #0010 SUB2 SWP2 #20 SFT2 ADD2
     ( z* ty* tx* ty* tx* my-10+4z )
     #000b DIV2 ROT2 SUB2
     ( z* ty* tx* tx* my-10+4z/b-ty )
@@ -471,7 +471,7 @@ JMP2r
     DUP2 #0002 NEQ2 ;&next-ty JCN2
     POP2
     #0001 SUB2
-    DUP2 #ffff NEQ2 ;&next-z JCN2
+    DUP2 INC2 ORA ;&next-z JCN2
     POP2
 
     ( no tile found )
