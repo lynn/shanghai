@@ -79,6 +79,7 @@
     #03ed .System/r DEO2
     #70e7 .System/g DEO2
     #6be7 .System/b DEO2
+    ;load-theme JSR2
     #0110 .Screen/width DEO2
     #00e0 .Screen/height DEO2
 
@@ -501,6 +502,23 @@ JMP2r
     ,&y STR2k POP
 
 JMP2r
+
+( theme )
+
+@load-theme ( -- )
+
+	;&path .File/name DEO2
+	#0002 .File/length DEO2
+	;&r .File/read DEO2
+	;&g .File/read DEO2
+	;&b .File/read DEO2
+	.File/success DEI2 ORA #01 JCN JMP2r
+	LIT2 &r $2 .System/r DEO2
+	LIT2 &g $2 .System/g DEO2
+	LIT2 &b $2 .System/b DEO2
+
+JMP2r
+	&path ".theme $1
 
 ~tiles.tal
 ~sus2.tal
